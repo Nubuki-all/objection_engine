@@ -4356,4 +4356,4 @@ languages = ["morfessor", "polyglot", "pycld2", "pyicu"]
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.12"
-content-hash = "38bd7d59bd7573a413e94acd89ed2eb7a90d70016622d57cd84412d2cf330ac1"
+content-hash = "3de22dc5ae6e941a953b977eb92ee7ddc0b93a368b8064cc88845aa1330f44b6"

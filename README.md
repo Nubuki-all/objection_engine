@@ -36,13 +36,17 @@ Or poetry
 poetry install
 ```
 
+(optional) In case you want language support outside English install polyglot and its dependencies.
+**Note:** These dependencies (especially `pyicu`) require system libraries. Check [faq.md](faq.md) for installation tips if you encounter issues.
 
-
-(optional) In case you want language support outside English install polyglot and its dependencies:
-(if on windows check faq.md)
-
+If using poetry:
 ```bash
-python3 -m pip install pyICU pycld2 morfessor polyglot
+poetry install -E languages
+```
+
+If using pip:
+```bash
+python3 -m pip install ".[languages]"
 ```
 
 Check the exmaple
