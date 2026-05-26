@@ -6,7 +6,11 @@ from timeit import default_timer as timer
 from os.path import join, exists
 from os import environ, getenv
 from turtle import pos
-from polyglot.text import Text
+try:
+    from polyglot.text import Text, Sentence
+except ImportError:
+    Text = None
+    Sentence = None
 
 from objection_engine.gavel_slam import GavelSlamObject
 from objection_engine.testimony_indicator import TestimonyIndicatorTextObject
@@ -46,7 +50,6 @@ from os.path import exists, join
 from shlex import split
 from math import cos, sin, pi
 from random import random
-from polyglot.text import Text, Sentence
 
 from .utils import ensure_assets_are_available
 
@@ -1139,6 +1142,8 @@ class DialogueBoxBuilder:
         return self._sentiment_analyzer(text)[0]
 
     def poly_sentiment(self, text: str):
+        if Text is None:
+            return {'label': 'positive', 'score': 0.0}
         poly_text = Text(text)
         try:
             polarity = poly_text.polarity
@@ -1464,10 +1469,10 @@ class DialogueBoxBuilder:
                 return self.poly_sentiment(text)
 
     def update_pose_for_sentence(
-        self, sentence: Sentence, sprites: list[str], manual_score: float = 0.0
+        self, sentence_text: str, sprites: list[str], manual_score: float = 0.0
     ):
         if manual_score == 0:
-            sentiment: dict = self.get_sentiment(sentence.raw)
+            sentiment: dict = self.get_sentiment(sentence_text)
         else:
             sentiment: dict = {
                 "label": "positive" if manual_score > 0 else "negative",
@@ -1504,12 +1509,19 @@ class DialogueBoxBuilder:
         sprites = this_char_data["sprites"]
 
         # Split text into sentences
-        pg_text = Text(text)
-        sentences: list[Sentence] = pg_text.sentences
+        if Text is not None:
+            pg_text = Text(text)
+            sentences = [s.raw for s in pg_text.sentences]
+            full_text = pg_text.raw
+        else:
+            from textblob import TextBlob
+            blob = TextBlob(text)
+            sentences = [str(s) for s in blob.sentences]
+            full_text = text
 
         # Determine if this should have an objection
         if manual_score == 0:
-            text_polarity_data = self.get_sentiment(pg_text.raw)
+            text_polarity_data = self.get_sentiment(full_text)
             polarity_type = text_polarity_data["label"]
             polarity_confidence = text_polarity_data["score"]
         else:
@@ -1555,12 +1567,12 @@ class DialogueBoxBuilder:
         space_width = get_text_width(" ", font=best_font)
 
         sentences_in_this_box = 0
-        for sentence_index, sentence in enumerate(sentences):
+        for sentence_index, sentence_text in enumerate(sentences):
             # Get the sentence sentiment here
 
             # We don't want to
             if sentence_index > 0:
-                self.update_pose_for_sentence(sentence, sprites)
+                self.update_pose_for_sentence(sentence_text, sprites)
 
             # Start animating the speaking and blips
             current_page.commands.extend(
@@ -1578,7 +1590,7 @@ class DialogueBoxBuilder:
             # except ValueError:
             #     pos_tags = [(word, None) for word in sentence.words]
 
-            pos_tags = [(word, None) for word in sentence.split()]
+            pos_tags = [(word, None) for word in sentence_text.split()]
 
             # First pass - let's find any words that are too long, and split them into characters.
             # The tuples in this updates list will be of the format (word, pos, space_after)
@@ -1653,7 +1665,7 @@ class DialogueBoxBuilder:
 
                 # If the next word is not the last word in the sentence, then
                 # add a space after it
-                if word_index != len(sentence.words) - 1 and space_after:
+                if word_index != len(updated_pos_tags) - 1 and space_after:
                     current_page.commands.append(DialogueTextChunk(" ", []))
                     current_line_width += space_width
 
