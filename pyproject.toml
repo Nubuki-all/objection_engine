@@ -6,7 +6,7 @@ authors = ["Luis Mayo Valbuena <luismayovalbuena@outlook.es>", "Malcolm Anderson
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "~3.11"
+python = "~3.12"
 spaw = "^0.2"
 Pillow = "^9.1.0"
 matplotlib = "^3.5.1"
