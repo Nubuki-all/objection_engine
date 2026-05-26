@@ -7,33 +7,37 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "~3.12"
-spaw = "^0.2"
-Pillow = "^9.1.0"
-matplotlib = "^3.5.1"
-pydub = "^0.25.1"
-moviepy = "^1.0.3"
-ffmpeg-python = "^0.2.0"
-spacy = "^3.1.4"
-textblob = "^0.17.1"
-praw = "^7.5.0"
-tinydb = "^4.7.0"
-google-cloud-translate = "^2.0.1"
-opencv-python = "^4.5.5"
-fonttools = "^4.33.3"
-numpy = "^1.19.3"
-rich = "^12.6.0"
-requests = "^2.28.1"
-toml = "^0.10.2"
-polyglot = "^16.7.4"
-pyicu = "^2.10.2"
-pycld2 = "^0.41"
-morfessor = "^2.0.6"
-transformers = "^4.25.1"
-torch = "^1.13.1"
-sentencepiece = "^0.1.97"
-lxml = "^4.9.3"
+spaw = ">=0.2"
+Pillow = ">=11.1.0"
+matplotlib = ">=3.10.0"
+pydub = ">=0.25.1"
+moviepy = ">=2.1.2"
+ffmpeg-python = ">=0.2.0"
+spacy = ">=3.8.0"
+textblob = ">=0.20.0"
+praw = ">=7.8.0"
+tinydb = ">=4.8.2"
+google-cloud-translate = ">=3.19.0"
+opencv-python = ">=4.11.0"
+fonttools = ">=4.63.0"
+numpy = ">=2.0.0"
+rich = ">=15.0.0"
+requests = ">=2.32.3"
+toml = ">=0.10.2"
+polyglot = { version = ">=16.7.4", optional = true }
+pyicu = { version = ">=2.14", optional = true }
+pycld2 = { version = ">=0.42", optional = true }
+morfessor = { version = ">=2.0.6", optional = true }
+transformers = ">=4.45.0"
+torch = ">=2.2.0"
+sentencepiece = ">=0.2.0"
+lxml = ">=6.1.0"
+huggingface-hub = "0.23.5"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.extras]
+languages = ["polyglot", "pyicu", "pycld2", "morfessor"]
+
+[tool.poetry.group.dev.dependencies]
 black = {version = "^23.1a1", allow-prereleases = true}
 
 [build-system]
