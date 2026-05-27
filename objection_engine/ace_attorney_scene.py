@@ -51,7 +51,7 @@ from shlex import split
 from math import cos, sin, pi
 from random import random
 
-from .utils import ensure_assets_are_available
+from .utils import ensure_assets_are_available, strip_emojis
 
 try:
     from rich import print
@@ -316,7 +316,7 @@ class ExclamationObject(ImageObject):
 
     def play_exclamation(self, type: str, speaker: str):
         self.set_filepath(
-            f"assets/exclamations/{type}.gif", {0.7: lambda: self.set_filepath(None)}
+            join(ASSETS_FOLDER, "exclamations", f"{type}.gif"), {0.7: lambda: self.set_filepath(None)}
         )
 
         audio_path = self.get_exclamation_path(type, speaker)
@@ -1114,7 +1114,13 @@ def get_sprite_tag(location: str, character: str, emotion: str):
 
 
 class DialogueBoxBuilder:
-    def __init__(self, callbacks: dict = None, verify_sprites: bool = False) -> None:
+    def __init__(
+        self,
+        callbacks: dict = None,
+        verify_sprites: bool = False,
+        strip_emojis: bool = True,
+    ) -> None:
+        self.strip_emojis = strip_emojis
         self.character_data = load_character_data(verify_sprites=verify_sprites)
         self.music_data = load_music_data()
         self.current_character_name: str = None
@@ -1400,7 +1406,10 @@ class DialogueBoxBuilder:
         assigned_characters: dict = None,
         adult_mode: bool = False,
         avoid_spoiler_sprites: bool = False,
+        strip_emojis: bool = None,
     ):
+        if strip_emojis is not None:
+            self.strip_emojis = strip_emojis
         self.avoid_spoiler_sprites = avoid_spoiler_sprites
 
         # Do character check
@@ -1433,7 +1442,7 @@ class DialogueBoxBuilder:
             DialoguePage(
                 [
                     DialogueAction(
-                        f"sprite left {ASSETS_FOLDER}/characters/phoenix/phoenix-normal-idle.gif",
+                        f"sprite left {join(ASSETS_FOLDER, CHARACTERS_FOLDER, 'phoenix', 'phoenix-normal-idle.gif')}",
                         0,
                     ),
                     DialogueAction(f"music start {self.relaxed_track}", 0),
@@ -1452,6 +1461,7 @@ class DialogueBoxBuilder:
                     text=comment.text_content,
                     evidence_path=comment.evidence_path,
                     manual_score=comment.score,
+                    strip_emojis_enabled=self.strip_emojis,
                 )
             )
 
@@ -1501,7 +1511,10 @@ class DialogueBoxBuilder:
         text: str,
         evidence_path: str = None,
         manual_score: float = 0,
+        strip_emojis_enabled: bool = True,
     ):
+        if strip_emojis_enabled:
+            text = strip_emojis(text)
         self.current_character_name = character
         this_char_data = self.character_data["characters"][character]
         location = this_char_data["location"]
@@ -1742,7 +1755,9 @@ class DialogueBoxBuilder:
         avoid_spoiler_sprites: bool = False,
         volume: int = -15,
         resolution_scale: float = 1.0,
+        strip_emojis: bool = True,
     ):
+        self.strip_emojis = strip_emojis
         self.build_from_comments(
             comments,
             music_code=music_code,

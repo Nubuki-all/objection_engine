@@ -3,12 +3,22 @@ from toml import load
 from os import DirEntry, scandir
 from os.path import join
 from PIL import Image, ImageFile
+from .config import get_assets_folder
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 from rich import print
 
-ASSETS_FOLDER = "assets"
+def get_assets_folder_proxy():
+    from .config import get_assets_folder
+    return get_assets_folder()
+
+# We'll use a property-like approach or just use the function in other files.
+# But many files use "from .loading import ASSETS_FOLDER" at top level.
+# To support that, we need ASSETS_FOLDER to be an object that calls get_assets_folder() on every access.
+
+from .assets_folder import AssetsFolder
+ASSETS_FOLDER = AssetsFolder()
 CHARACTERS_FOLDER = "characters"
 MUSIC_FOLDER = "music"
 
@@ -63,6 +73,7 @@ def _sprite_is_usable(sprite_file: DirEntry) -> bool:
         return False
 
 def load_character_data(verify_sprites: bool = False) -> dict:
+    assets_folder = get_assets_folder()
     """
     Returns information about the available characters in a dictionary.
 
@@ -105,14 +116,14 @@ def load_character_data(verify_sprites: bool = False) -> dict:
     """
     # Find all of the characters
     characters = {}
-    folders = [f for f in scandir(join(ASSETS_FOLDER, CHARACTERS_FOLDER)) if f.is_dir()]
+    folders = [f for f in scandir(join(assets_folder, CHARACTERS_FOLDER)) if f.is_dir()]
     for f in folders:
         # Allow us to skip characters by prefixing their name with
         # an underscore
         if f.name.startswith("_"):
             continue
         try:
-            with open(join(f.path, "config.toml")) as config_file:
+            with open(join(f.path, "config.toml"), encoding="utf-8") as config_file:
                 characters[f.name] = load(config_file)
         except FileNotFoundError:
             _character_has_no_config_error(f.name)
@@ -123,7 +134,7 @@ def load_character_data(verify_sprites: bool = False) -> dict:
     for character_name, character_data in characters.items():
         files_in_character_dir = [
             f
-            for f in scandir(join(ASSETS_FOLDER, CHARACTERS_FOLDER, character_name))
+            for f in scandir(join(assets_folder, CHARACTERS_FOLDER, character_name))
             if f.is_file()
         ]
 
@@ -214,7 +225,7 @@ def load_character_data(verify_sprites: bool = False) -> dict:
 
     # Config file in characters folder gives high priority characters
     try:
-        with open(join(ASSETS_FOLDER, CHARACTERS_FOLDER, "config.toml")) as config_file:
+        with open(join(assets_folder, CHARACTERS_FOLDER, "config.toml"), encoding="utf-8") as config_file:
             data = load(config_file)
             high_priority_characters = data.get("high_priority", [])
     except FileNotFoundError:
@@ -238,12 +249,13 @@ def load_character_data(verify_sprites: bool = False) -> dict:
 
 
 def load_music_data() -> dict:
+    assets_folder = get_assets_folder()
     # Find all of the music packs
     music_packs = {}
-    folders = [f for f in scandir(join(ASSETS_FOLDER, MUSIC_FOLDER)) if f.is_dir()]
+    folders = [f for f in scandir(join(assets_folder, MUSIC_FOLDER)) if f.is_dir()]
     for f in folders:
         try:
-            with open(join(f.path, "config.toml")) as config_file:
+            with open(join(f.path, "config.toml"), encoding="utf-8") as config_file:
                 music_packs[f.name] = load(config_file)
         except FileNotFoundError:
             print(f'ERROR - Music folder "{f.name}" has no config.toml')

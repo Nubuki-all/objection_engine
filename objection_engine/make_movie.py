@@ -19,6 +19,8 @@ from rich.progress import (
 )
 
 from objection_engine.utils import ensure_assets_are_available
+import os
+import importlib
 
 def render_comment_list(
     comment_list: list["Comment"],
@@ -28,7 +30,19 @@ def render_comment_list(
     assigned_characters: dict = None,
     adult_mode: bool = False,
     avoid_spoiler_sprites: bool = False,
+    strip_emojis: bool = True,
+    asset_pack: str = None,
 ):
+    if asset_pack is not None:
+        os.environ["OE_ASSETS_FOLDER"] = asset_pack
+        from . import loading, font_constants, gavel_slam, judge_verdict, testimony_indicator, ace_attorney_scene
+        importlib.reload(loading)
+        importlib.reload(font_constants)
+        importlib.reload(gavel_slam)
+        importlib.reload(judge_verdict)
+        importlib.reload(testimony_indicator)
+        importlib.reload(ace_attorney_scene)
+
     ensure_assets_are_available()
     with Progress(
         TextColumn("[progress.description]{task.description}"),
@@ -121,7 +135,7 @@ def render_comment_list(
             "on_ffmpeg_finished": on_ffmpeg_finished,
         }
 
-        builder = DialogueBoxBuilder(callbacks=callbacks)
+        builder = DialogueBoxBuilder(callbacks=callbacks, strip_emojis=strip_emojis)
         builder.render(
             comment_list,
             output_filename=output_filename,
@@ -129,5 +143,6 @@ def render_comment_list(
             assigned_characters=assigned_characters,
             adult_mode=adult_mode,
             avoid_spoiler_sprites=avoid_spoiler_sprites,
-            resolution_scale=resolution_scale
+            resolution_scale=resolution_scale,
+            strip_emojis=strip_emojis,
         )

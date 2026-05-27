@@ -1,0 +1,51 @@
+name: Package Assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      asset_name:
+        description: 'Name of the asset pack (e.g., assets_aj)'
+        required: true
+        default: 'assets_aj'
+      source_url:
+        description: 'URL to download the raw assets from'
+        required: false
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Structure
+        run: |
+          mkdir -p ${{ github.event.inputs.asset_name }}/characters
+          mkdir -p ${{ github.event.inputs.asset_name }}/music
+          mkdir -p ${{ github.event.inputs.asset_name }}/textbox
+          mkdir -p ${{ github.event.inputs.asset_name }}/bg
+          mkdir -p ${{ github.event.inputs.asset_name }}/fg
+          mkdir -p ${{ github.event.inputs.asset_name }}/sound
+          mkdir -p ${{ github.event.inputs.asset_name }}/evidence
+          mkdir -p ${{ github.event.inputs.asset_name }}/exclamations
+          mkdir -p ${{ github.event.inputs.asset_name }}/testimony_indicator
+          mkdir -p ${{ github.event.inputs.asset_name }}/verdict
+
+      - name: Download Assets
+        if: ${{ github.event.inputs.source_url != '' }}
+        run: |
+          curl -L ${{ github.event.inputs.source_url }} -o raw_assets.zip
+          unzip raw_assets.zip -d raw_assets_extracted
+          # Here you would add logic to move files from raw_assets_extracted
+          # to the appropriate folders in ${{ github.event.inputs.asset_name }}
+          # For example:
+          # mv raw_assets_extracted/apollo/* ${{ github.event.inputs.asset_name }}/characters/apollo/
+
+      - name: Zip Asset Pack
+        run: |
+          zip -r ${{ github.event.inputs.asset_name }}.zip ${{ github.event.inputs.asset_name }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ github.event.inputs.asset_name }}.zip
