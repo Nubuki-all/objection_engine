@@ -53,7 +53,37 @@ def download_assets():
     with open(zip_name, 'wb') as file:
         file.write(response.content)
     with zipfile.ZipFile(zip_name, 'r') as zip_ref:
-        zip_ref.extractall(ASSETS_FOLDER)
+        # If we extract directly into ASSETS_FOLDER, and the zip contains
+        # a folder with the same name, we'll get nested folders.
+        # Most of these zips (like assetsv4.zip) contain the folders
+        # (characters/, music/, etc.) directly.
+        # But our GitHub Action zips the folder itself.
+
+        # To be safe, we extract to a temp folder and then move contents
+        temp_extract_path = f'temp_{ASSETS_FOLDER}'
+        zip_ref.extractall(temp_extract_path)
+
+        # Check if the extracted folder contains exactly one folder that is named after the assets
+        extracted_items = os.listdir(temp_extract_path)
+        if len(extracted_items) == 1 and os.path.isdir(os.path.join(temp_extract_path, extracted_items[0])):
+            src_path = os.path.join(temp_extract_path, extracted_items[0])
+        else:
+            src_path = temp_extract_path
+
+        if not os.path.exists(ASSETS_FOLDER):
+            os.makedirs(ASSETS_FOLDER)
+
+        for item in os.listdir(src_path):
+            s = os.path.join(src_path, item)
+            d = os.path.join(ASSETS_FOLDER, item)
+            if os.path.isdir(s):
+                if os.path.exists(d):
+                    shutil.rmtree(d)
+                shutil.copytree(s, d)
+            else:
+                shutil.copy2(s, d)
+
+        shutil.rmtree(temp_extract_path)
     os.remove(zip_name)
 
 def detect_old_assets_format():

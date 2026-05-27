@@ -5,7 +5,8 @@ class TextType(IntEnum):
     DIALOGUE = 0
     NAME = 1
 
-FONT_ARRAY = [
+def get_font_array():
+    return [
         # AA-Like > Pixel > Generic
         {'path': f'./{ASSETS_FOLDER}/textbox/font/igiari-cyrillic/igiari-cyrillic.ttf'},
         # AA-like, Latin, hiragana, katakana, (part of) cyrillic
@@ -24,9 +25,10 @@ FONT_ARRAY = [
         {'path': f'./{ASSETS_FOLDER}/textbox/font/igiari/bitsy-font-with-arabic.ttf', 'size': 10, 'rtl': True},
     ]
 
-NAMETAG_FONT_ARRAY = [
-    {'path': f'./{ASSETS_FOLDER}/textbox/font/ace-name/ace-name.ttf', 'size': 8}
-] + FONT_ARRAY
+def get_nametag_font_array():
+    return [
+        {'path': f'./{ASSETS_FOLDER}/textbox/font/ace-name/ace-name.ttf', 'size': 8}
+    ] + get_font_array()
 
 TEXT_COLORS = {
     "red": (240, 112, 56),

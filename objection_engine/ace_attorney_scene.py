@@ -44,7 +44,7 @@ from .parse_tags import (
     DialogueTextLineBreak,
 )
 from .font_tools import get_best_font, get_text_width
-from .font_constants import TEXT_COLORS, FONT_ARRAY, NAMETAG_FONT_ARRAY, TextType
+from .font_constants import TEXT_COLORS, get_font_array, get_nametag_font_array, TextType
 from typing import Callable, Optional
 from os.path import exists, join
 from shlex import split
@@ -162,7 +162,7 @@ class NameBox(SceneObject):
     def set_text(self, text: str):
         self.text = text
         self.namebox_text.text = self.text
-        font_stuff = get_best_font(text, NAMETAG_FONT_ARRAY)
+        font_stuff = get_best_font(text, get_nametag_font_array())
         self.font = ImageFont.truetype(
             font_stuff["path"], size=font_stuff.get("size", 12)
         )
@@ -632,7 +632,7 @@ class AceAttorneyDirector(Director):
         self.current_page = self.pages[self.page_index]
         self.textbox.page = self.current_page
         self.textbox.font_data = get_best_font(
-            self.current_page.get_raw_text(), FONT_ARRAY
+            self.current_page.get_raw_text(), get_font_array()
         )
 
     cur_time_for_char: float = 0.0
@@ -713,10 +713,15 @@ class AceAttorneyDirector(Director):
 
                     elif c == "deskslam":
                         character = action_split[1]
-                        if character == "phoenix":
-                            self.play_phoenix_desk_slam()
-                        elif character == "edgeworth":
-                            self.play_edgeworth_desk_slam()
+                        # Use the high priority character names if available
+                        high_priority = self.character_data.get("high_priority", [])
+                        defense = high_priority[0] if len(high_priority) > 0 else "phoenix"
+                        prosecution = high_priority[1] if len(high_priority) > 1 else "edgeworth"
+
+                        if character == defense:
+                            self.play_defense_desk_slam(defense)
+                        elif character == prosecution:
+                            self.play_prosecution_desk_slam(prosecution)
                         current_dialogue_obj.completed = True
 
                     elif c == "showarrow":
@@ -936,7 +941,7 @@ class AceAttorneyDirector(Director):
                 self.current_page = self.pages[self.page_index]
                 self.textbox.page = self.current_page
                 self.textbox.font_data = get_best_font(
-                    self.current_page.get_raw_text(), FONT_ARRAY
+                    self.current_page.get_raw_text(), get_font_array()
                 )
                 self.page_start_time = timer()
                 self.time_on_this_page = 0
@@ -1072,11 +1077,11 @@ class AceAttorneyDirector(Director):
             }
         )
 
-    def play_phoenix_desk_slam(self):
+    def play_defense_desk_slam(self, character_id: str):
         fp_before = self.phoenix.filepath
         cb_before = self.phoenix.callbacks
         self.phoenix.set_filepath(
-            get_sprite_location("phoenix", "deskslam"),
+            get_sprite_location(character_id, "deskslam"),
             {0.8: lambda: self.phoenix.set_filepath(fp_before, cb_before)},
         )
         self.audio_commands.append(
@@ -1087,11 +1092,11 @@ class AceAttorneyDirector(Director):
             }
         )
 
-    def play_edgeworth_desk_slam(self):
+    def play_prosecution_desk_slam(self, character_id: str):
         fp_before = self.edgeworth.filepath
         cb_before = self.edgeworth.callbacks
         self.edgeworth.set_filepath(
-            get_sprite_location("edgeworth", "deskslam"),
+            get_sprite_location(character_id, "deskslam"),
             {0.8: lambda: self.edgeworth.set_filepath(fp_before, cb_before)},
         )
         self.audio_commands.append(
@@ -1173,6 +1178,8 @@ class DialogueBoxBuilder:
         go_to_tense_music: bool = False,
         text: str = None,
     ) -> DialoguePage:
+        if self.strip_emojis:
+            user_name = strip_emojis(user_name)
         this_char_data = self.character_data["characters"][self.current_character_name]
         location = this_char_data["location"]
         gender = this_char_data["gender"]
@@ -1438,11 +1445,20 @@ class DialogueBoxBuilder:
         # Start relaxed music
         self.relaxed_track = join(music_code, choice(music_pack["relaxed"]))
         self.tense_track = join(music_code, choice(music_pack["tense"]))
+
+        # Get initial character for the first page
+        # Usually we want the high priority characters to be present
+        high_priority = self.character_data.get("high_priority", [])
+        if len(high_priority) > 0:
+            initial_char = high_priority[0]
+        else:
+            initial_char = choice(list(self.character_data["characters"].keys()))
+
         self.pages.append(
             DialoguePage(
                 [
                     DialogueAction(
-                        f"sprite left {join(ASSETS_FOLDER, CHARACTERS_FOLDER, 'phoenix', 'phoenix-normal-idle.gif')}",
+                        f"sprite left {join(ASSETS_FOLDER, CHARACTERS_FOLDER, initial_char, f'{initial_char}-normal-idle.gif')}",
                         0,
                     ),
                     DialogueAction(f"music start {self.relaxed_track}", 0),
@@ -1515,6 +1531,7 @@ class DialogueBoxBuilder:
     ):
         if strip_emojis_enabled:
             text = strip_emojis(text)
+            user_name = strip_emojis(user_name)
         self.current_character_name = character
         this_char_data = self.character_data["characters"][character]
         location = this_char_data["location"]
@@ -1579,7 +1596,7 @@ class DialogueBoxBuilder:
         word_index = 0
 
         # Get the font for this text
-        best_font = get_best_font(text, FONT_ARRAY)
+        best_font = get_best_font(text, get_font_array())
 
         space_width = get_text_width(" ", font=best_font)
 

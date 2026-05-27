@@ -4,9 +4,10 @@ from objection_engine.MovieKit import SceneObject
 from objection_engine.loading import ASSETS_FOLDER
 
 TESTIMONY_STROKE_WIDTH = 2
-TESTIMONY_INDICATOR_FONT_PATH = join(
-    ASSETS_FOLDER, "testimony_indicator", "DINCondensed-Bold.ttf"
-)
+def get_testimony_indicator_font_path():
+    return join(
+        ASSETS_FOLDER, "testimony_indicator", "DINCondensed-Bold.ttf"
+    )
 
 """
 Visible for 43 frames (1.433s)
@@ -27,10 +28,11 @@ class TestimonyIndicatorTextObject(SceneObject):
         self.stroke_color = (0, 192, 56)
         self.fill_color = (255, 255, 255)
 
-        if not exists(TESTIMONY_INDICATOR_FONT_PATH):
+        font_path = get_testimony_indicator_font_path()
+        if not exists(font_path):
             return
 
-        self.font = ImageFont.truetype(TESTIMONY_INDICATOR_FONT_PATH, 32)
+        self.font = ImageFont.truetype(font_path, 32)
         self.set_text("Testimony")
 
     def get_text_bbox(self, text: str):

@@ -19,3 +19,12 @@ class AssetsFolder:
 
     def __getattr__(self, name):
         return getattr(str(self), name)
+
+    def __eq__(self, other):
+        return str(self) == str(other)
+
+    def __hash__(self):
+        return hash(str(self))
+
+    def __bool__(self):
+        return bool(str(self))
