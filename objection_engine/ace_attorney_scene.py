@@ -5,6 +5,7 @@ from random import choice
 from timeit import default_timer as timer
 from os.path import join, exists
 from os import environ, getenv
+import re
 from turtle import pos
 try:
     from polyglot.text import Text, Sentence
@@ -1590,7 +1591,13 @@ class DialogueBoxBuilder:
             # except ValueError:
             #     pos_tags = [(word, None) for word in sentence.words]
 
-            pos_tags = [(word, None) for word in sentence_text.split()]
+            pos_tags = []
+            for part in re.split(r'(\n)', sentence_text):
+                if part == '\n':
+                    pos_tags.append(('\n', None))
+                else:
+                    for word in part.split():
+                        pos_tags.append((word, None))
 
             # First pass - let's find any words that are too long, and split them into characters.
             # The tuples in this updates list will be of the format (word, pos, space_after)
@@ -1598,6 +1605,10 @@ class DialogueBoxBuilder:
             # for the purposes of wrapping, but we don't want each character to be separated by a space.
             updated_pos_tags = []
             for word, pos in pos_tags:
+                if word == '\n':
+                    updated_pos_tags.append((word, pos, False))
+                    continue
+
                 word_width = get_text_width(word, font=best_font)
 
                 # If this word ALONE is too wide for the box, then we need to split it into characters
@@ -1610,6 +1621,31 @@ class DialogueBoxBuilder:
                     updated_pos_tags.append((word, pos, True))
 
             for word_index, (word, pos, space_after) in enumerate(updated_pos_tags):
+                if word == '\n':
+                    current_line_width = 0
+                    if current_line_index < 2:
+                        # Go to next line down
+                        current_page.commands.append(DialogueTextLineBreak())
+                        current_line_index += 1
+
+                    else:
+                        # This page is full, so create a new page
+                        self.finish_box(current_page)
+                        all_pages.append(current_page)
+                        current_page = self.initialize_box(user_name, text=text)
+                        current_page.commands.extend(
+                            [
+                                DialogueAction(f"startblip {gender}", 0),
+                                DialogueAction(
+                                    f"sprite {location} {get_sprite_location(self.current_character_name, f'{self.current_character_animation}-talk')}",
+                                    0,
+                                ),
+                            ]
+                        )
+                        current_line_index = 0
+                        sentences_in_this_box = 0
+                    continue
+
                 word_width = get_text_width(word, font=best_font)
 
                 # Line break if this word is too wide to fit
