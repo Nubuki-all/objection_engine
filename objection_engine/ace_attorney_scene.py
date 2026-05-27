@@ -1509,15 +1509,18 @@ class DialogueBoxBuilder:
         sprites = this_char_data["sprites"]
 
         # Split text into sentences
-        if Text is not None:
-            pg_text = Text(text)
-            sentences = [s.raw for s in pg_text.sentences]
-            full_text = pg_text.raw
-        else:
-            from textblob import TextBlob
-            blob = TextBlob(text)
-            sentences = [str(s) for s in blob.sentences]
-            full_text = text
+        sentences = []
+        for line in text.split('\n'):
+            if Text is not None:
+                pg_text = Text(line)
+                sentences.extend([s.raw for s in pg_text.sentences])
+            else:
+                from textblob import TextBlob
+                blob = TextBlob(line)
+                sentences.extend([str(s) for s in blob.sentences])
+            sentences.append('\n')
+        if sentences: sentences.pop() # remove last \n
+        full_text = text
 
         # Determine if this should have an objection
         if manual_score == 0:
@@ -1540,7 +1543,8 @@ class DialogueBoxBuilder:
         # Stuff at beginning of text box
         all_pages: list[DialoguePage] = []
 
-        self.update_pose_for_sentence(sentences[0], sprites, manual_score=manual_score)
+        first_sentence = next((s for s in sentences if s != '\n'), '...')
+        self.update_pose_for_sentence(first_sentence, sprites, manual_score=manual_score)
         current_page = self.initialize_box(
             user_name, do_objection, go_to_tense_music, text=text
         )
@@ -1568,6 +1572,32 @@ class DialogueBoxBuilder:
 
         sentences_in_this_box = 0
         for sentence_index, sentence_text in enumerate(sentences):
+            if sentence_text == '\n':
+                if current_line_width > 0 or current_line_index > 0:
+                    current_line_width = 0
+                    if current_line_index < 2:
+                        # Go to next line down
+                        current_page.commands.append(DialogueTextLineBreak())
+                        current_line_index += 1
+
+                    else:
+                        # This page is full, so create a new page
+                        self.finish_box(current_page)
+                        all_pages.append(current_page)
+                        current_page = self.initialize_box(user_name, text=text)
+                        current_page.commands.extend(
+                            [
+                                DialogueAction(f"startblip {gender}", 0),
+                                DialogueAction(
+                                    f"sprite {location} {get_sprite_location(self.current_character_name, f'{self.current_character_animation}-talk')}",
+                                    0,
+                                ),
+                            ]
+                        )
+                        current_line_index = 0
+                        sentences_in_this_box = 0
+                continue
+
             # Get the sentence sentiment here
 
             # We don't want to
@@ -1584,11 +1614,6 @@ class DialogueBoxBuilder:
                     ),
                 ]
             )
-
-            # try:
-            #     pos_tags = sentence.pos_tags
-            # except ValueError:
-            #     pos_tags = [(word, None) for word in sentence.words]
 
             pos_tags = [(word, None) for word in sentence_text.split()]
 
@@ -1675,7 +1700,7 @@ class DialogueBoxBuilder:
                 current_page.commands.extend(
                     [
                         DialogueAction(f"stopblip", 0),
-                        # DialogueTextChunk(" ", []),
+                        DialogueTextChunk(" ", []),
                         DialogueAction(
                             f"sprite {location} {get_sprite_location(self.current_character_name, f'{self.current_character_animation}-idle')}",
                             0,

@@ -52,6 +52,9 @@ def fit_words_within_width(words: Union[list[str], str], font: ImageFont.FreeTyp
     new_text = ""
     space = " " if insert_space else ""
     for word in words:
+        if word == "\n":
+            new_text = new_text.rstrip() + "\n"
+            continue
         last_sentence = new_text.split("\n")[-1] + word + space
         if font.getlength(text=last_sentence) >= 240:
             if new_text.split("\n")[-1] != "":
@@ -64,7 +67,11 @@ def fit_words_within_width(words: Union[list[str], str], font: ImageFont.FreeTyp
 
 def split_str_into_newlines(text: str, font_path, font_size):
     font = ImageFont.truetype(font_path, font_size)
-    words = text.split(" ")
+    words = []
+    for line in text.split('\n'):
+        words.extend(line.split(' '))
+        words.append('\n')
+    if words: words.pop() # remove last \n
     return fit_words_within_width(words, font, True)
 
 
