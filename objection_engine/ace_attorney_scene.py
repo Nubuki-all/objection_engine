@@ -5,7 +5,6 @@ from random import choice
 from timeit import default_timer as timer
 from os.path import join, exists
 from os import environ, getenv
-import re
 from turtle import pos
 try:
     from polyglot.text import Text, Sentence
@@ -1510,15 +1509,18 @@ class DialogueBoxBuilder:
         sprites = this_char_data["sprites"]
 
         # Split text into sentences
-        if Text is not None:
-            pg_text = Text(text)
-            sentences = [s.raw for s in pg_text.sentences]
-            full_text = pg_text.raw
-        else:
-            from textblob import TextBlob
-            blob = TextBlob(text)
-            sentences = [str(s) for s in blob.sentences]
-            full_text = text
+        sentences = []
+        for line in text.split('\n'):
+            if Text is not None:
+                pg_text = Text(line)
+                sentences.extend([s.raw for s in pg_text.sentences])
+            else:
+                from textblob import TextBlob
+                blob = TextBlob(line)
+                sentences.extend([str(s) for s in blob.sentences])
+            sentences.append('\n')
+        if sentences: sentences.pop() # remove last \n
+        full_text = text
 
         # Determine if this should have an objection
         if manual_score == 0:
@@ -1541,7 +1543,8 @@ class DialogueBoxBuilder:
         # Stuff at beginning of text box
         all_pages: list[DialoguePage] = []
 
-        self.update_pose_for_sentence(sentences[0], sprites, manual_score=manual_score)
+        first_sentence = next((s for s in sentences if s != '\n'), '...')
+        self.update_pose_for_sentence(first_sentence, sprites, manual_score=manual_score)
         current_page = self.initialize_box(
             user_name, do_objection, go_to_tense_music, text=text
         )
@@ -1569,59 +1572,8 @@ class DialogueBoxBuilder:
 
         sentences_in_this_box = 0
         for sentence_index, sentence_text in enumerate(sentences):
-            # Get the sentence sentiment here
-
-            # We don't want to
-            if sentence_index > 0:
-                self.update_pose_for_sentence(sentence_text, sprites)
-
-            # Start animating the speaking and blips
-            current_page.commands.extend(
-                [
-                    DialogueAction(f"startblip {gender}", 0),
-                    DialogueAction(
-                        f"sprite {location} {get_sprite_location(self.current_character_name, f'{self.current_character_animation}-talk')}",
-                        0,
-                    ),
-                ]
-            )
-
-            # try:
-            #     pos_tags = sentence.pos_tags
-            # except ValueError:
-            #     pos_tags = [(word, None) for word in sentence.words]
-
-            pos_tags = []
-            for part in re.split(r'(\n)', sentence_text):
-                if part == '\n':
-                    pos_tags.append(('\n', None))
-                else:
-                    for word in part.split():
-                        pos_tags.append((word, None))
-
-            # First pass - let's find any words that are too long, and split them into characters.
-            # The tuples in this updates list will be of the format (word, pos, space_after)
-            # The space_after variable is important because for really long strings, we treat each character as a word
-            # for the purposes of wrapping, but we don't want each character to be separated by a space.
-            updated_pos_tags = []
-            for word, pos in pos_tags:
-                if word == '\n':
-                    updated_pos_tags.append((word, pos, False))
-                    continue
-
-                word_width = get_text_width(word, font=best_font)
-
-                # If this word ALONE is too wide for the box, then we need to split it into characters
-                # Each character except the last should not have a space after it, so it still looks
-                # like one word
-                if word_width > MAX_WIDTH:
-                    for i, c in enumerate(word):
-                        updated_pos_tags.append((c, pos, i == len(word) - 1))
-                else:
-                    updated_pos_tags.append((word, pos, True))
-
-            for word_index, (word, pos, space_after) in enumerate(updated_pos_tags):
-                if word == '\n':
+            if sentence_text == '\n':
+                if current_line_width > 0 or current_line_index > 0:
                     current_line_width = 0
                     if current_line_index < 2:
                         # Go to next line down
@@ -1644,8 +1596,45 @@ class DialogueBoxBuilder:
                         )
                         current_line_index = 0
                         sentences_in_this_box = 0
-                    continue
+                continue
 
+            # Get the sentence sentiment here
+
+            # We don't want to
+            if sentence_index > 0:
+                self.update_pose_for_sentence(sentence_text, sprites)
+
+            # Start animating the speaking and blips
+            current_page.commands.extend(
+                [
+                    DialogueAction(f"startblip {gender}", 0),
+                    DialogueAction(
+                        f"sprite {location} {get_sprite_location(self.current_character_name, f'{self.current_character_animation}-talk')}",
+                        0,
+                    ),
+                ]
+            )
+
+            pos_tags = [(word, None) for word in sentence_text.split()]
+
+            # First pass - let's find any words that are too long, and split them into characters.
+            # The tuples in this updates list will be of the format (word, pos, space_after)
+            # The space_after variable is important because for really long strings, we treat each character as a word
+            # for the purposes of wrapping, but we don't want each character to be separated by a space.
+            updated_pos_tags = []
+            for word, pos in pos_tags:
+                word_width = get_text_width(word, font=best_font)
+
+                # If this word ALONE is too wide for the box, then we need to split it into characters
+                # Each character except the last should not have a space after it, so it still looks
+                # like one word
+                if word_width > MAX_WIDTH:
+                    for i, c in enumerate(word):
+                        updated_pos_tags.append((c, pos, i == len(word) - 1))
+                else:
+                    updated_pos_tags.append((word, pos, True))
+
+            for word_index, (word, pos, space_after) in enumerate(updated_pos_tags):
                 word_width = get_text_width(word, font=best_font)
 
                 # Line break if this word is too wide to fit
@@ -1711,7 +1700,7 @@ class DialogueBoxBuilder:
                 current_page.commands.extend(
                     [
                         DialogueAction(f"stopblip", 0),
-                        # DialogueTextChunk(" ", []),
+                        DialogueTextChunk(" ", []),
                         DialogueAction(
                             f"sprite {location} {get_sprite_location(self.current_character_name, f'{self.current_character_animation}-idle')}",
                             0,
