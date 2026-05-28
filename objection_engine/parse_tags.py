@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from re import compile
 from copy import deepcopy
 from objection_engine.font_tools import get_best_font, split_str_into_newlines, split_with_joined_sentences, get_text_width
-from .font_constants import FONT_ARRAY
+from .font_constants import get_font_array
 
 @dataclass
 class DialogueTag:
@@ -154,7 +154,7 @@ class DialogueTextContent:
         pages = []
         current_position = 0
         for box_text in split_with_joined_sentences(self.cleaned_lines):
-            splitter_font_path = get_best_font(box_text, FONT_ARRAY)['path']
+            splitter_font_path = get_best_font(box_text, get_font_array())['path']
             wrapped_box_lines = split_str_into_newlines(box_text, splitter_font_path, 15).split('\n')
             chunks: list[list[DialogueTextChunk]] = []
 

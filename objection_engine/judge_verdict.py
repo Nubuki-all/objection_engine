@@ -17,7 +17,8 @@ VERDICT_COLORS = {
     "white": {"fill": (255, 255, 255), "stroke": (0, 0, 0)},
 }
 
-VERDICT_FONT_PATH = f"./{ASSETS_FOLDER}/verdict/DFMinchoStd-W12.otf"
+def get_verdict_font_path():
+    return f"./{ASSETS_FOLDER}/verdict/DFMinchoStd-W12.otf"
 
 
 class JudgeVerdictTextObject(SceneObject):
@@ -27,13 +28,14 @@ class JudgeVerdictTextObject(SceneObject):
 
         # If the verdict font isn't available, then don't crash, but don't
         # render anything
-        if not exists(VERDICT_FONT_PATH):
+        font_path = get_verdict_font_path()
+        if not exists(font_path):
             _print_note(
-                f"Verdict font not found at {VERDICT_FONT_PATH}, so verdict text will not be rendered"
+                f"Verdict font not found at {font_path}, so verdict text will not be rendered"
             )
             return
 
-        self.font = ImageFont.truetype(VERDICT_FONT_PATH, VERDICT_FONT_SIZE)
+        self.font = ImageFont.truetype(font_path, VERDICT_FONT_SIZE)
         self._text = ""
         self.clear()
 

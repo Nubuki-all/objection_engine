@@ -2,7 +2,8 @@ from objection_engine.loading import ASSETS_FOLDER, _print_note
 from objection_engine.MovieKit import ImageObject, SceneObject
 from os.path import join, exists
 
-GAVEL_SLAM_PATH = join(ASSETS_FOLDER, "gavel_slam")
+def get_gavel_slam_path():
+    return join(ASSETS_FOLDER, "gavel_slam")
 
 """
 https://www.youtube.com/watch?v=XBR35H_ya4g as reference
@@ -31,9 +32,10 @@ skip the frame) - instead, I rounded up fo 0.04.
 class GavelSlamObject(SceneObject):
     def __init__(self, parent: SceneObject = None, name: str = "", pos: tuple[int, int, int] = (0, 0, 0)):
         super().__init__(parent, name, pos)
-        if not exists(GAVEL_SLAM_PATH):
+        gavel_slam_path = get_gavel_slam_path()
+        if not exists(gavel_slam_path):
             _print_note(
-                f"Gavel slam assets not found at {GAVEL_SLAM_PATH}"
+                f"Gavel slam assets not found at {gavel_slam_path}"
             )
             return
 
@@ -41,14 +43,14 @@ class GavelSlamObject(SceneObject):
             parent=self,
             name="Gavel Slam BG",
             pos=(0, 0, 11),
-            filepath=join(GAVEL_SLAM_PATH, "gavel_slam_bg.png"),
+            filepath=join(gavel_slam_path, "gavel_slam_bg.png"),
         )
 
         self.block_img = ImageObject(
             parent=self,
             name="Gavel Slam Block",
             pos=(0, 0, 11),
-            filepath=join(GAVEL_SLAM_PATH, "gavel_slam_block.png"),
+            filepath=join(gavel_slam_path, "gavel_slam_block.png"),
         )
 
         self.gavel_frames = [
@@ -56,19 +58,19 @@ class GavelSlamObject(SceneObject):
                 parent=self,
                 name="Gavel Frame 1",
                 pos=(0, 0, 11),
-                filepath=join(GAVEL_SLAM_PATH, "gavel_slam_gavel_1.png"),
+                filepath=join(gavel_slam_path, "gavel_slam_gavel_1.png"),
             ),
             ImageObject(
                 parent=self,
                 name="Gavel Frame 2",
                 pos=(0, 0, 11),
-                filepath=join(GAVEL_SLAM_PATH, "gavel_slam_gavel_2.png"),
+                filepath=join(gavel_slam_path, "gavel_slam_gavel_2.png"),
             ),
             ImageObject(
                 parent=self,
                 name="Gavel Frame 3",
                 pos=(0, 0, 11),
-                filepath=join(GAVEL_SLAM_PATH, "gavel_slam_gavel_3.png"),
+                filepath=join(gavel_slam_path, "gavel_slam_gavel_3.png"),
             ),
         ]
         self.set_gavel_frame(0)

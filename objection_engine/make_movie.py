@@ -19,6 +19,7 @@ from rich.progress import (
 )
 
 from objection_engine.utils import ensure_assets_are_available
+from .config import assets_context
 
 def render_comment_list(
     comment_list: list["Comment"],
@@ -28,8 +29,32 @@ def render_comment_list(
     assigned_characters: dict = None,
     adult_mode: bool = False,
     avoid_spoiler_sprites: bool = False,
+    strip_emojis: bool = True,
+    asset_pack: str = "assets",
 ):
-    ensure_assets_are_available()
+    with assets_context(asset_pack):
+        ensure_assets_are_available()
+        _render_comment_list_internal(
+            comment_list=comment_list,
+            output_filename=output_filename,
+            music_code=music_code,
+            resolution_scale=resolution_scale,
+            assigned_characters=assigned_characters,
+            adult_mode=adult_mode,
+            avoid_spoiler_sprites=avoid_spoiler_sprites,
+            strip_emojis=strip_emojis
+        )
+
+def _render_comment_list_internal(
+    comment_list: list["Comment"],
+    output_filename: str = "output.mp4",
+    music_code: str = "pwr",
+    resolution_scale: int = 1,
+    assigned_characters: dict = None,
+    adult_mode: bool = False,
+    avoid_spoiler_sprites: bool = False,
+    strip_emojis: bool = True,
+):
     with Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
@@ -121,7 +146,7 @@ def render_comment_list(
             "on_ffmpeg_finished": on_ffmpeg_finished,
         }
 
-        builder = DialogueBoxBuilder(callbacks=callbacks)
+        builder = DialogueBoxBuilder(callbacks=callbacks, strip_emojis=strip_emojis)
         builder.render(
             comment_list,
             output_filename=output_filename,
@@ -129,5 +154,6 @@ def render_comment_list(
             assigned_characters=assigned_characters,
             adult_mode=adult_mode,
             avoid_spoiler_sprites=avoid_spoiler_sprites,
-            resolution_scale=resolution_scale
+            resolution_scale=resolution_scale,
+            strip_emojis=strip_emojis,
         )

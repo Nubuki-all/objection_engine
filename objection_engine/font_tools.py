@@ -1,4 +1,4 @@
-from .font_constants import FONT_ARRAY
+from .font_constants import get_font_array
 from PIL import ImageFont
 from typing import List, Dict, Union
 from textwrap import wrap
@@ -14,7 +14,7 @@ except:
 
 def get_text_width(text, font_size = 15, font = None):
     if font is None:
-        font = get_best_font(text, FONT_ARRAY)
+        font = get_best_font(text, get_font_array())
     font_path = font['path']
     font_obj = ImageFont.truetype(font_path, font_size)
     return font_obj.getlength(text)
