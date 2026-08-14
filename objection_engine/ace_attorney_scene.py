@@ -1511,6 +1511,8 @@ class DialogueBoxBuilder:
         # Split text into sentences
         sentences = []
         for line in text.split('\n'):
+            if not line.strip():
+                continue
             if Text is not None:
                 pg_text = Text(line)
                 sentences.extend([s.raw for s in pg_text.sentences])
